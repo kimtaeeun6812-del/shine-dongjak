@@ -40,6 +40,7 @@ footer{border-top:1px solid var(--edge);margin-top:34px;padding:17px 0 23px;disp
 .map-scale{position:absolute;z-index:1;bottom:9px;left:10px;text-align:center;border:solid #24364e;border-width:0 1px 2px;background:#f5fbf7e8;color:#24364e;font-size:9px;line-height:13px}
 .map-credit{bottom:4px;border-radius:2px}.map-controls button:disabled{opacity:.45;cursor:default}
 
+#map{cursor:grab;touch-action:none;user-select:none}#map.dragging{cursor:grabbing}#map:focus-visible{outline:2px solid #9fe8f4;outline-offset:-2px}.map-note,.marker,.map-scale{pointer-events:none}.map-controls button[data-map-reset]{font-size:19px}
 </style>
 </head>
 <body>
@@ -3729,11 +3730,13 @@ for (const item of official) {
   }
 }
 function catalogMatch(row) {
-  const address = normalize(row.address ?? '');
-  const addressHit = address && catalogByAddress.get(address);
-  if (addressHit) return addressHit;
+  const rawAddress = (row.address ?? '').trim().replace(/^(?:서울(?:특별시)?\s*)?동작구\s*/, '');
+  const address = normalize(rawAddress);
   const name = simpleName(row.name);
   const matches = (catalogByName.get(name) ?? []).filter(item => !item.dong || !row.dong || item.dong === row.dong);
+  const addressHit = catalogByAddress.get(address);
+  if (addressHit && matches.includes(addressHit)) return addressHit;
+  if (row.fromListing && rawAddress && /\d/.test(rawAddress)) return null;
   return matches.length === 1 ? matches[0] : null;
 }
 const demos = [
@@ -3746,9 +3749,9 @@ const demos = [
   ['보라매자이더포레스트','신대방동','여의대방로22길 121',null,null,173000,75000],
   ['이수역리가','사당동','사당로27길 130',null,null,161000,73000],
   ['노량진쌍용예가','노량진동','장승배기로16길 134',null,null,148000,67000],
-  ['대방현대','대방동','대방동 현대아파트',null,null,139000,62500],
-  ['상도더샵','상도1동','상도더샵',null,null,133000,60000],
-  ['이수힐스테이트','동작동','동작동 이수힐스테이트',null,null,129000,56000]
+  ['대방현대1차','대방동','등용로 127',null,null,139000,62500],
+  ['상도더샵','상도동','장승배기로4길 9',null,null,133000,60000],
+  ['이수힐스테이트','동작동','동작대로39길 22',null,null,129000,56000]
 ].map(([name,dong,address,lat,lon,sale,lease], i) => ({id:'demo-' + i,name,dong,address,point:lat ? {lat,lon} : null,sale,lease}));
 const neighborhood = {
   흑석동:[['흑석역 9호선','지하철'],['중앙대학교 정문 정류장','버스'],['서울흑석초등학교','초등학교'],['중앙대사대부속중학교','중학교'],['중앙대사대부속고등학교','고등학교'],['흑석시장','전통시장'],['흑석동 주민센터','관공서']],
@@ -4004,13 +4007,12 @@ function render(autoSelect) {
   else { renderDetail(); renderLocation(); }
 }
 function pointFor(row) {
-  const officialPoint = catalogMatch(row)?.point;
-  const known = demos.find(apt => apt.dong === row.dong && normalize(apt.name) === normalize(row.name));
-  return officialPoint ?? row.point ?? known?.point ?? null;
+  return catalogMatch(row)?.point ?? row.point ?? null;
 }
 async function selectApt(row) {
   state.selected = row;
-  state.zoom = 16;
+  state.zoom = row ? 16 : 14;
+  state.mapCenter = null;
   state.geo = row ? pointFor(row) : null;
   state.recent = null;
   state.recentStatus = '';
@@ -4047,25 +4049,37 @@ function mapPosition(lat,lon) {
   ];
 }
 
+const mapTileIndices = Object.keys(mapTiles).map(key => key.split(',').map(Number));
+const mapBounds = [0,1].map(axis => [Math.min(...mapTileIndices.map(tile => tile[axis])) * mapTileSize, (Math.max(...mapTileIndices.map(tile => tile[axis])) + 1) * mapTileSize]);
+
 function drawMap() {
   const map = $('#map');
   if (!map) return;
   const row = state.selected;
   const exact = state.geo;
   const [lat,lon] = exact ? [exact.lat,exact.lon] : (centers[row?.dong] ?? [37.499,126.948]);
-  const zoom = row ? state.zoom : 14;
+  const zoom = state.zoom;
   const width = map.clientWidth;
   const height = map.clientHeight;
   if (!width || !height) return;
 
   const units = mapTileSize / 256 * 2**(14-zoom);
-  const [x,y] = mapPosition(lat,lon);
+  const home = mapPosition(lat,lon);
+  const center = state.mapCenter ?? home;
+  const [x,y] = center.map((value,axis) => {
+    const [min,max] = mapBounds[axis];
+    const half = (axis === 0 ? width : height) * units / 2;
+    return half*2 >= max-min ? (min+max)/2 : Math.max(min+half,Math.min(max-half,value));
+  });
+  state.mapCenter = [x,y];
   const left = x - width * units / 2;
   const top = y - height * units / 2;
   const right = x + width * units / 2;
   const bottom = y + height * units / 2;
-  const marker = exact ? '<span class="marker"><strong>' + escape(row.name) + '</strong><span class="marker-dot"></span></span>' : '';
-  const caption = exact ? '단지 위치 · 대표 좌표' : row ? (row.dong || row.admin || '동작구') + ' 중심 · 단지 좌표 미확인' : '동작구';
+  const [pinX,pinY] = [(home[0]-left)/units,(home[1]-top)/units];
+  const pinVisible = exact && pinX >= 0 && pinY >= 0 && pinX <= width && pinY <= height;
+  const marker = pinVisible ? '<span class="marker" style="left:' + pinX + 'px;top:' + pinY + 'px"><strong>' + escape(row.name) + '</strong><span class="marker-dot"></span></span>' : '';
+  const caption = exact ? '동작구 공개자료 · 단지 대표 위치' : row ? (row.dong || row.admin || '동작구') + ' 중심 · 단지 좌표 미확인' : '동작구';
   const paths = [];
   const names = [];
   for (let tx = Math.floor(left/mapTileSize); tx <= Math.floor(right/mapTileSize); tx++) {
@@ -4085,7 +4099,7 @@ function drawMap() {
   for (const [name,type,lat,lon] of allPlaces) {
     if (type === '철도·지하철') names.push([...mapPosition(lat,lon),name.replace(/\s+\d+호선$/, '').replace(/역$/, '') + '역','station']);
   }
-  const reserved = exact ? [[width/2,height/2-18,Math.max(100,row.name.length*13+22)]] : [];
+  const reserved = pinVisible ? [[pinX,pinY-18,Math.max(100,row.name.length*13+22)]] : [];
   const seen = new Set();
   const textLabels = [];
   const priority = {station:0,water:1,place:2,street:3};
@@ -4101,26 +4115,32 @@ function drawMap() {
     seen.add(name);
     textLabels.push('<text class="map-label map-label-' + kind + '" x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '">' + escape(name) + '</text>');
   }
-  const controls = row ? '<div class="map-controls"><button type="button" data-zoom="1" aria-label="지도 확대"' + (zoom===18?' disabled':'') + '>+</button><button type="button" data-zoom="-1" aria-label="지도 축소"' + (zoom===14?' disabled':'') + '>−</button></div>' : '';
+  const controls = '<div class="map-controls"><button type="button" data-zoom="1" aria-label="지도 확대"' + (zoom===18?' disabled':'') + '>+</button><button type="button" data-zoom="-1" aria-label="지도 축소"' + (zoom===14?' disabled':'') + '>−</button><button type="button" data-map-reset aria-label="선택한 단지로 돌아가기" title="선택한 단지로 돌아가기">⌖</button></div>';
   const metersPerPixel = Math.cos(lat * Math.PI / 180) * 40075017 / mapWorld * units;
   const distance = zoom >= 17 ? 50 : zoom >= 15 ? 100 : 500;
   const scaleWidth = Math.round(distance / metersPerPixel);
+  const focused = document.activeElement;
+  const control = map.contains(focused) && focused.matches('button') ? focused.getAttribute('aria-label') : null;
   map.innerHTML = '<svg class="map-vector" viewBox="' + [left,top,width*units,height*units].join(' ') + '" aria-hidden="true">' + paths.join('') + '</svg>' +
     '<svg class="map-labels" viewBox="0 0 ' + width + ' ' + height + '" aria-hidden="true">' + textLabels.join('') + '</svg>' +
     '<span class="map-note">' + escape(caption) + '</span>' + controls + marker +
     '<span class="map-scale" style="width:' + scaleWidth + 'px">' + distance + 'm</span>' +
     '<a class="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>';
+  if (control) [...map.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === control && !button.disabled)?.focus({preventScroll:true});
 }
 function renderDetail() {
   const row = state.selected;
   const detail = $('#detail');
   if (!row) {
-    detail.innerHTML = '<div class="detail-head"><div><h3>단지 지도</h3><p>실거래 순위, 아파트 목록 또는 추천매물에서 단지를 선택하세요.</p></div></div><div class="map" id="map" aria-label="동작구 지도"></div>';
+    detail.innerHTML = '<div class="detail-head"><div><h3>단지 지도</h3><p>실거래 순위, 아파트 목록 또는 추천매물에서 단지를 선택하세요.</p></div></div><div class="map" id="map" tabindex="0" aria-label="동작구 지도. 방향키로 이동하고 더하기와 빼기로 확대 및 축소할 수 있습니다."></div>';
     drawMap();
     return;
   }
+  const mapUrl = state.geo
+    ? 'https://map.kakao.com/link/map/' + encodeURIComponent(row.name) + ',' + state.geo.lat + ',' + state.geo.lon
+    : link([row.dong || row.admin, row.address, row.name].filter(Boolean).join(' '));
   detail.innerHTML = '<div class="detail-head"><div><h3>' + escape(row.name) + '</h3><p>' + icon('pin') + ' ' + escape([row.dong || row.admin, catalogMatch(row)?.address || row.address].filter(Boolean).join(' · ')) +
-    (row.fromListing ? ' · ' + (row.sample ? '샘플 매물' : '등록 매물') + ' ' + label[row.type] + ' ' + transactionPrice(row) : '') + '</p></div><a class="map-link" href="' + link(row.dong + ' ' + row.name) + '" target="_blank" rel="noopener">지도 열기 ' + icon('arrow') + '</a></div><div class="map" id="map" aria-label="선택한 단지 주변 지도"></div><div class="recent" id="recent"></div>';
+    (row.fromListing ? ' · ' + (row.sample ? '샘플 매물' : '등록 매물') + ' ' + label[row.type] + ' ' + transactionPrice(row) : '') + '</p></div><a class="map-link" href="' + escape(mapUrl) + '" target="_blank" rel="noopener">카카오맵에서 보기 ' + icon('arrow') + '</a></div><div class="map" id="map" tabindex="0" aria-label="선택한 단지 주변 지도. 방향키로 이동하고 더하기와 빼기로 확대 및 축소할 수 있습니다."></div><div class="recent" id="recent"></div>';
   drawMap();
   renderRecent();
 }
@@ -4223,9 +4243,57 @@ $('#directory').addEventListener('click', event => {
   const index = event.target.closest('[data-directory]')?.dataset.directory;
   if (index !== undefined) void selectApt(state.directory[Number(index)]);
 });
-$('#detail').addEventListener('click', event => {
+const mapPanel = $('#detail');
+function zoomMap(delta) {
+  state.zoom = Math.min(18,Math.max(14,state.zoom + delta));
+  drawMap();
+}
+function resetMap() {
+  state.mapCenter = null;
+  state.zoom = state.selected ? 16 : 14;
+  drawMap();
+}
+function moveMap(dx,dy) {
+  if (!state.mapCenter) return;
+  const units = mapTileSize / 256 * 2**(14-state.zoom);
+  state.mapCenter = [state.mapCenter[0] + dx*units,state.mapCenter[1] + dy*units];
+  drawMap();
+}
+mapPanel.addEventListener('click', event => {
+  if (event.target.closest('[data-map-reset]')) resetMap();
   const delta = event.target.closest('[data-zoom]')?.dataset.zoom;
-  if (delta) { state.zoom = Math.min(18,Math.max(14,state.zoom+Number(delta))); drawMap(); }
+  if (delta) zoomMap(Number(delta));
+});
+mapPanel.addEventListener('keydown', event => {
+  if (event.target.id !== 'map') return;
+  const direction = {ArrowLeft:[-55,0],ArrowRight:[55,0],ArrowUp:[0,-55],ArrowDown:[0,55]}[event.key];
+  if (direction) moveMap(...direction);
+  else if (event.key === '+' || event.key === '=') zoomMap(1);
+  else if (event.key === '-') zoomMap(-1);
+  else if (event.key === 'Home') resetMap();
+  else return;
+  event.preventDefault();
+});
+let mapDrag;
+mapPanel.addEventListener('pointerdown', event => {
+  const map = event.target.closest('#map');
+  if (!map || !event.isPrimary || event.button !== 0 || event.target.closest('button,a')) return;
+  map.setPointerCapture(event.pointerId);
+  mapDrag = {map,id:event.pointerId,x:event.clientX,y:event.clientY};
+  map.classList.add('dragging');
+});
+mapPanel.addEventListener('pointermove', event => {
+  if (mapDrag?.id !== event.pointerId) return;
+  const dx = mapDrag.x-event.clientX, dy = mapDrag.y-event.clientY;
+  if (!dx && !dy) return;
+  mapDrag.x = event.clientX;
+  mapDrag.y = event.clientY;
+  moveMap(dx,dy);
+});
+mapPanel.addEventListener('lostpointercapture', event => {
+  if (mapDrag?.id !== event.pointerId) return;
+  mapDrag.map.classList.remove('dragging');
+  mapDrag = null;
 });
 let resizeTimer;
 window.addEventListener('resize',() => {
