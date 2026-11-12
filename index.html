@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="naver-maps-client-id" content="">
   <meta name="theme-color" content="#0b1324">
   <meta name="description" content="샤인부동산이 정리한 서울 동작구 아파트 실거래와 생활권 브리핑">
   <title>동작구 아파트 브리핑 | 샤인부동산</title>
@@ -41,6 +42,10 @@ footer{border-top:1px solid var(--edge);margin-top:34px;padding:17px 0 23px;disp
 .map-credit{bottom:4px;border-radius:2px}.map-controls button:disabled{opacity:.45;cursor:default}
 
 #map{cursor:grab;touch-action:none;user-select:none}#map.dragging{cursor:grabbing}#map:focus-visible{outline:2px solid #9fe8f4;outline-offset:-2px}.map-note,.marker,.map-scale{pointer-events:none}.map-controls button[data-map-reset]{font-size:19px}
+#map.has-naver-map{cursor:default;touch-action:auto}.naver-map-host{position:absolute;inset:0}.has-naver-map .map-note,.naver-map-reset{z-index:3}.naver-map-reset{position:absolute;right:10px;bottom:30px;width:32px;height:32px;border:1px solid #354764;border-radius:6px;background:#182438;color:white;font-size:19px;cursor:pointer}
+#detail:has(.has-naver-map) .map-link{display:none}
+#ranking #map{height:clamp(350px,50vh,530px)}#ranking .map-label-school{fill:#4665a0}#ranking .map-label-station{font-size:11px}
+@media(max-width:760px){#ranking .explorer{grid-template-columns:1fr}#ranking .detail{grid-row:1}#ranking #map{height:clamp(290px,48vh,410px)}#ranking .rank-list{max-height:300px;overflow:auto}}
 </style>
 </head>
 <body>
@@ -64,11 +69,33 @@ footer{border-top:1px solid var(--edge);margin-top:34px;padding:17px 0 23px;disp
   <header class="topbar">
     <div class="shell topinner">
       <a href="#overview" class="brand"><span class="logo"><svg aria-hidden="true"><use href="#i-logo"/></svg></span><span><strong>샤인부동산</strong><small>동작구 전문 공인중개사</small></span></a>
-      <nav aria-label="페이지 메뉴"><a href="#overview" class="nav-active">시장 개요</a><a href="#ranking">실거래 순위</a><a href="#location">입지 분석</a><a href="#listings">추천매물</a></nav>
+      <nav aria-label="페이지 메뉴"><a href="#ranking" class="nav-active">단지 지도</a><a href="#overview">시장 개요</a><a href="#location">입지 분석</a><a href="#listings">추천매물</a></nav>
       <span class="phone"><svg><use href="#i-phone"/></svg> Tel. 000-XXXX-XXXX</span>
     </div>
   </header>
   <main class="shell">
+    <section class="filters card" aria-label="조회 조건">
+      <label class="field"><span>지역 <small>법정동</small></span><select id="dong"></select></label>
+      <fieldset><legend>조회 주기</legend><div class="segment" id="mode"><button type="button" data-mode="week">주간</button><button type="button" data-mode="month" class="active">월간</button><button type="button" data-mode="custom">직접 지정</button></div></fieldset>
+      <label class="field"><span>기준일 / 종료일</span><input id="end" type="date" min="2006-01-01"></label>
+      <label class="field" id="start-field" hidden><span>시작일</span><input id="start" type="date" min="2006-01-01"></label>
+      <button class="primary" id="apply"><svg><use href="#i-refresh"/></svg> 조회</button>
+      <span id="range" class="range"></span>
+    </section>
+    <div class="filter-error" id="filter-error" role="alert"></div>
+
+    <section id="ranking" aria-labelledby="rank-title">
+      <div class="section-head"><div><div class="eyebrow">01 <b>/</b> APARTMENT EXPLORER</div><h2 id="rank-title">동작구 아파트 Top 10</h2></div><span class="subtle" id="rank-method"></span></div>
+      <div class="explorer">
+        <div class="card rank-panel">
+          <div class="segment trade-segment" id="trade"><button type="button" class="active" data-trade="sale">매매</button><button type="button" data-trade="lease">전세</button><button type="button" data-trade="rent">월세</button></div>
+          <div id="rank-list" class="rank-list"></div>
+          <div class="directory" id="directory"></div>
+        </div>
+        <div class="card detail" id="detail"></div>
+      </div>
+    </section>
+
     <section class="hero" id="overview">
       <svg class="skyline" viewBox="0 0 730 254" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
         <defs>
@@ -96,34 +123,12 @@ footer{border-top:1px solid var(--edge);margin-top:34px;padding:17px 0 23px;disp
       </div>
     </section>
 
-    <section class="filters card" aria-label="조회 조건">
-      <label class="field"><span>지역 <small>법정동</small></span><select id="dong"></select></label>
-      <fieldset><legend>조회 주기</legend><div class="segment" id="mode"><button type="button" data-mode="week">주간</button><button type="button" data-mode="month" class="active">월간</button><button type="button" data-mode="custom">직접 지정</button></div></fieldset>
-      <label class="field"><span>기준일 / 종료일</span><input id="end" type="date" min="2006-01-01"></label>
-      <label class="field" id="start-field" hidden><span>시작일</span><input id="start" type="date" min="2006-01-01"></label>
-      <button class="primary" id="apply"><svg><use href="#i-refresh"/></svg> 조회</button>
-      <span id="range" class="range"></span>
-    </section>
-    <div class="filter-error" id="filter-error" role="alert"></div>
-
     <section class="overview" aria-labelledby="overview-title">
-      <div class="section-head"><div><div class="eyebrow">01 <b>/</b> MARKET PULSE</div><h2 id="overview-title">시장 한눈에 보기</h2></div><div class="status-side"><span id="status" class="status" role="status"><i></i> 데이터 조회 중</span></div></div>
+      <div class="section-head"><div><div class="eyebrow">02 <b>/</b> MARKET PULSE</div><h2 id="overview-title">시장 한눈에 보기</h2></div><div class="status-side"><span id="status" class="status" role="status"><i></i> 데이터 조회 중</span></div></div>
       <div class="kpis" id="kpis"></div>
       <div class="chart card">
         <div class="chart-head"><div><h3>계약일별 거래 추이</h3><p id="chart-caption">선택한 기간 · 신고 건수</p></div><div class="legend"><span><i></i> 매매</span><span><i></i> 전세</span><span><i></i> 월세</span></div></div>
         <div id="chart" class="chart-body"></div>
-      </div>
-    </section>
-
-    <section id="ranking" aria-labelledby="rank-title">
-      <div class="section-head"><div><div class="eyebrow">02 <b>/</b> APARTMENT EXPLORER</div><h2 id="rank-title">동작구 아파트 Top 10</h2></div><span class="subtle" id="rank-method"></span></div>
-      <div class="explorer">
-        <div class="card rank-panel">
-          <div class="segment trade-segment" id="trade"><button type="button" class="active" data-trade="sale">매매</button><button type="button" data-trade="lease">전세</button><button type="button" data-trade="rent">월세</button></div>
-          <div id="rank-list" class="rank-list"></div>
-          <div class="directory" id="directory"></div>
-        </div>
-        <div class="card detail" id="detail"></div>
       </div>
     </section>
 
@@ -4052,9 +4057,102 @@ function mapPosition(lat,lon) {
 const mapTileIndices = Object.keys(mapTiles).map(key => key.split(',').map(Number));
 const mapBounds = [0,1].map(axis => [Math.min(...mapTileIndices.map(tile => tile[axis])) * mapTileSize, (Math.max(...mapTileIndices.map(tile => tile[axis])) + 1) * mapTileSize]);
 
+
+
+const naverMapClientId = $('meta[name="naver-maps-client-id"]')?.content.trim();
+let naverMapsPromise;
+let embeddedMap;
+let naverAuthFailed = false;
+
+function useDefaultMap(container) {
+  if (container !== $('#map')) return;
+  if (embeddedMap?.container === container) {
+    embeddedMap.map.destroy();
+    embeddedMap = null;
+    container.classList.remove('has-naver-map');
+    container.setAttribute('tabindex','0');
+    container.setAttribute('aria-label','선택한 단지 주변 지도');
+    drawMap();
+  }
+  const note = container.querySelector('.map-note');
+  if (note) note.textContent = '네이버 지도 연결 실패 · 기본 지도 표시';
+}
+
+function loadNaverMaps() {
+  if (naverMapsPromise) return naverMapsPromise;
+  naverMapsPromise = new Promise((resolve,reject) => {
+    const script = document.createElement('script');
+    const timer = setTimeout(() => reject(new Error('네이버 지도 응답 시간 초과')),10000);
+    const fail = () => {
+      clearTimeout(timer);
+      reject(new Error('네이버 지도를 불러올 수 없습니다'));
+    };
+    window.navermap_authFailure = () => {
+      naverAuthFailed = true;
+      const container = $('#map');
+      if (container) useDefaultMap(container);
+      fail();
+    };
+    window.shineDongjakNaverReady = () => {
+      clearTimeout(timer);
+      const maps = window.naver?.maps;
+      if (!naverAuthFailed && typeof maps?.Map === 'function') resolve(maps);
+      else fail();
+    };
+    script.async = true;
+    script.src = 'https://oapi.map.naver.com/openapi/v3/maps.js?' + new URLSearchParams({
+      ncpKeyId:naverMapClientId,callback:'shineDongjakNaverReady'
+    });
+    script.onerror = fail;
+    document.head.append(script);
+  });
+  return naverMapsPromise;
+}
+
+async function showNaverMap(container,row,point) {
+  if (!naverMapClientId || !/^https?:$/.test(location.protocol) || !container) return;
+  let host;
+  try {
+    const maps = await loadNaverMaps();
+    if (!container.isConnected || container !== $('#map')) return;
+    if (naverAuthFailed) { useDefaultMap(container); return; }
+    const [lat,lon] = point ? [point.lat,point.lon] : (centers[row?.dong] ?? [37.499,126.948]);
+    const position = new maps.LatLng(lat,lon);
+    host = document.createElement('div');
+    host.className = 'naver-map-host';
+    container.append(host);
+    const zoom = row ? 16 : 14;
+    const map = new maps.Map(host,{
+      center:position,zoom,scrollWheel:false,zoomControl:true,
+      zoomControlOptions:{position:maps.Position.TOP_RIGHT}
+    });
+    if (naverAuthFailed) { map.destroy(); host.remove(); useDefaultMap(container); return; }
+    if (point) new maps.Marker({map,position,title:row.name});
+    const note = document.createElement('span');
+    note.className = 'map-note';
+    note.textContent = point ? row.name + ' · 단지 대표 위치' : row ? (row.dong || row.admin || '동작구') + ' 중심 · 단지 좌표 미확인' : '동작구';
+    const reset = document.createElement('button');
+    reset.className = 'naver-map-reset';
+    reset.type = 'button';
+    reset.textContent = '⌖';
+    reset.setAttribute('aria-label','선택한 단지로 돌아가기');
+    reset.addEventListener('click',() => { map.setZoom(zoom); map.setCenter(position); });
+    for (const child of [...container.children]) if (child !== host) child.remove();
+    container.append(note,reset);
+    container.classList.add('has-naver-map');
+    container.removeAttribute('tabindex');
+    container.setAttribute('aria-label','네이버 지도 · ' + (row?.name || '동작구'));
+    embeddedMap = {container,map};
+  } catch {
+    host?.remove();
+    useDefaultMap(container);
+  }
+}
+
 function drawMap() {
   const map = $('#map');
   if (!map) return;
+  if (embeddedMap?.container === map) return;
   const row = state.selected;
   const exact = state.geo;
   const [lat,lon] = exact ? [exact.lat,exact.lon] : (centers[row?.dong] ?? [37.499,126.948]);
@@ -4098,11 +4196,12 @@ function drawMap() {
   for (const [dong,coordinates] of Object.entries(centers)) names.push([...mapPosition(...coordinates),dong,'place']);
   for (const [name,type,lat,lon] of allPlaces) {
     if (type === '철도·지하철') names.push([...mapPosition(lat,lon),name.replace(/\s+\d+호선$/, '').replace(/역$/, '') + '역','station']);
+    if (zoom >= 16 && ['초등학교','중학교','고등학교'].includes(type)) names.push([...mapPosition(lat,lon),name,'school']);
   }
   const reserved = pinVisible ? [[pinX,pinY-18,Math.max(100,row.name.length*13+22)]] : [];
   const seen = new Set();
   const textLabels = [];
-  const priority = {station:0,water:1,place:2,street:3};
+  const priority = {station:0,water:1,school:2,place:3,street:4};
   names.sort((a,b) => priority[a[3]] - priority[b[3]]);
   for (const [px,py,name,kind] of names) {
     if (seen.has(name) || (kind === 'street' && zoom < 16)) continue;
@@ -4129,19 +4228,22 @@ function drawMap() {
   if (control) [...map.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === control && !button.disabled)?.focus({preventScroll:true});
 }
 function renderDetail() {
+  embeddedMap?.map.destroy();
+  embeddedMap = null;
   const row = state.selected;
   const detail = $('#detail');
   if (!row) {
     detail.innerHTML = '<div class="detail-head"><div><h3>단지 지도</h3><p>실거래 순위, 아파트 목록 또는 추천매물에서 단지를 선택하세요.</p></div></div><div class="map" id="map" tabindex="0" aria-label="동작구 지도. 방향키로 이동하고 더하기와 빼기로 확대 및 축소할 수 있습니다."></div>';
     drawMap();
+    void showNaverMap($('#map'),null,null);
     return;
   }
-  const mapUrl = state.geo
-    ? 'https://map.kakao.com/link/map/' + encodeURIComponent(row.name) + ',' + state.geo.lat + ',' + state.geo.lon
-    : link([row.dong || row.admin, row.address, row.name].filter(Boolean).join(' '));
+  const query = ['서울 동작구',catalogMatch(row)?.address || row.address,row.name].filter(Boolean).join(' ');
+  const mapUrl = 'https://map.naver.com/p/search/' + encodeURIComponent(query);
   detail.innerHTML = '<div class="detail-head"><div><h3>' + escape(row.name) + '</h3><p>' + icon('pin') + ' ' + escape([row.dong || row.admin, catalogMatch(row)?.address || row.address].filter(Boolean).join(' · ')) +
-    (row.fromListing ? ' · ' + (row.sample ? '샘플 매물' : '등록 매물') + ' ' + label[row.type] + ' ' + transactionPrice(row) : '') + '</p></div><a class="map-link" href="' + escape(mapUrl) + '" target="_blank" rel="noopener">카카오맵에서 보기 ' + icon('arrow') + '</a></div><div class="map" id="map" tabindex="0" aria-label="선택한 단지 주변 지도. 방향키로 이동하고 더하기와 빼기로 확대 및 축소할 수 있습니다."></div><div class="recent" id="recent"></div>';
+    (row.fromListing ? ' · ' + (row.sample ? '샘플 매물' : '등록 매물') + ' ' + label[row.type] + ' ' + transactionPrice(row) : '') + '</p></div><a class="map-link" href="' + escape(mapUrl) + '" target="_blank" rel="noopener">네이버 지도에서 보기 ' + icon('arrow') + '</a></div><div class="map" id="map" tabindex="0" aria-label="선택한 단지 주변 지도. 방향키로 이동하고 더하기와 빼기로 확대 및 축소할 수 있습니다."></div><div class="recent" id="recent"></div>';
   drawMap();
+  void showNaverMap($('#map'),row,state.geo);
   renderRecent();
 }
 function renderRecent() {
@@ -4277,7 +4379,7 @@ mapPanel.addEventListener('keydown', event => {
 let mapDrag;
 mapPanel.addEventListener('pointerdown', event => {
   const map = event.target.closest('#map');
-  if (!map || !event.isPrimary || event.button !== 0 || event.target.closest('button,a')) return;
+  if (!map || map.classList.contains('has-naver-map') || !event.isPrimary || event.button !== 0 || event.target.closest('button,a')) return;
   map.setPointerCapture(event.pointerId);
   mapDrag = {map,id:event.pointerId,x:event.clientX,y:event.clientY};
   map.classList.add('dragging');
