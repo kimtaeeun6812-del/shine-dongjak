@@ -87,6 +87,32 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
 .map-popup dd{margin:0}.map-popup small{display:block;color:#685746}
 .map-rank-leaders{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
 .map-rank-leaders line{stroke:#315e46;stroke-width:1.4}
+
+#ranking .detail{background:#fffdf8;border:1px solid #748e7f;border-radius:14px}
+#ranking #map{height:clamp(350px,51vh,550px)}
+.map-rank{background:#1e3043;border-color:#fff;color:#fff;box-shadow:0 2px 8px #1f304960}
+.map-rank[aria-pressed="true"]{background:#876431;box-shadow:0 0 0 2px #fff,0 3px 9px #513b275c}
+.map-place{background:#fffffff2;font-weight:850}
+.map-place-place{background:transparent;color:#465047;text-shadow:0 0 3px white,0 0 4px white}
+.map-place-station::before,.map-place-park::before,.map-place-facility::before{display:inline-block;margin-right:4px}
+.map-place-station::before{content:"🚇";font-size:9px}
+.map-place-park::before,.map-place-facility::before{content:"◆";color:#335f48}
+.map-popup{inset:auto auto 23px 12px;transform:none;width:min(290px,calc(100% - 54px));padding:12px 14px;background:#fff;color:#2b2437;border-color:#e0d9e8;box-shadow:0 3px 16px #2f234524}
+.map-popup header strong{font-size:15px}
+.map-popup button{width:28px;height:28px;border:1px solid #e7dfed;border-radius:8px}
+.map-popup dl div{grid-template-columns:50px 1fr;border-top:0;padding:3px 0}
+.map-popup dd b{font-weight:850}
+.map-popup small{color:#635b6d}
+.map-popup .popup-source{margin:1px 0 7px}
+.map-summary{margin:0;padding:8px 14px;border-bottom:1px solid #e7dfd1;color:#64584d;font-size:12px}
+#detail .detail-head{display:block;padding:15px 16px 9px}
+#detail .detail-head h3{font-size:21px}
+#detail .detail-head p{font-size:13px;margin:5px 0 9px}
+.detail-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.detail-actions .map-link{font-size:13px;font-weight:800;text-decoration:underline}
+#detail .recent{padding:9px 16px 15px}
+#detail .recent-title{font-size:15px}
+#detail .recent-row{font-size:12px;padding:8px 0}
 </style>
 </head>
 <body>
@@ -4155,6 +4181,7 @@ function addVworldTiles(map, left, top, right, bottom, units, zoom, caption) {
     credit.href = "https://www.vworld.kr/";
     credit.textContent = "© 공간정보 오픈플랫폼 브이월드";
     note.textContent = caption.replace("동작구 공개자료", "브이월드");
+    updateMapSummary(map, "브이월드");
   });
 }
 
@@ -4185,12 +4212,12 @@ function rankPins() {
 function rankedPopup(row) {
   const rows = recentSnapshot.filter(entry => same(row,entry)).sort((a,b) => b.date.localeCompare(a.date));
   return '<aside class="map-popup" role="region" aria-label="단지 최근 실거래"><header><strong>' + escape(row.name) +
-    '</strong><button type="button" data-close-map-popup aria-label="거래 팝업 닫기">×</button></header><dl>' +
+    '</strong><button type="button" data-close-map-popup aria-label="거래 팝업 닫기">×</button></header><small class="popup-source">국토교통부 신고 거래 · 2026.09~11.15</small><dl>' +
     Object.entries(label).map(([type,name]) => {
       const entry = rows.find(item => item.type === type);
       return '<div><dt>' + name + '</dt><dd>' + (entry ? '<b>' + transactionPrice(entry) + '</b><small>전용 ' +
         entry.area.toFixed(2) + '㎡ · ' + entry.date + '</small>' : '수록 기간 거래 없음') + '</dd></div>';
-    }).join('') + '</dl><small>국토교통부 신고 자료 · 2026.09~11.15</small></aside>';
+    }).join('') + '</dl></aside>';
 }
 
 function drawRankPins(pins,left,top,units,width,height) {
@@ -4208,6 +4235,13 @@ function drawRankPins(pins,left,top,units,width,height) {
     buttons.push('<button type="button" class="map-rank" data-map-rank="'+index+'" style="left:'+x+'px;top:'+y+'px" aria-label="'+(index+1)+'위 '+escape(row.name)+'" aria-pressed="'+(row.id===state.selected?.id)+'">'+(index+1)+'</button>');
   }
   return {placed,html:'<svg class="map-rank-leaders" aria-hidden="true">'+leaders.join('')+'</svg>'+buttons.join('')};
+}
+
+function updateMapSummary(map, provider) {
+  const visible = map.querySelectorAll('[data-map-rank]').length;
+  const summary = $('#map-summary');
+  if (summary) summary.textContent = provider + ' · ' + (state.demo ? '예시 단지 ' : '단지 ') +
+    visible + '/' + (state.ranking?.length ?? 0) + '곳 표시';
 }
 
 function drawMap() {
@@ -4318,21 +4352,29 @@ function drawMap() {
     '<span class="map-scale" style="width:' + scaleWidth + 'px">' + distance + 'm</span>' +
     '<a class="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>';
   map.querySelector("[data-vworld-key]").addEventListener("click", configureVworld);
+  updateMapSummary(map, "OpenStreetMap");
   addVworldTiles(map, left, top, right, bottom, units, zoom, caption);
   if (control) [...map.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === control && !button.disabled)?.focus({preventScroll:true});
 }
 function renderDetail() {
   const row = state.selected;
   const detail = $('#detail');
+  const map = '<div class="map" id="map" tabindex="0" aria-label="단지 지도. 방향키로 이동하고 더하기와 빼기로 확대 및 축소할 수 있습니다."></div>' +
+    '<p class="map-summary" id="map-summary"></p>';
   if (!row) {
-    detail.innerHTML = '<div class="detail-head"><div><h3>단지 지도</h3><p>실거래 순위, 아파트 목록 또는 추천매물에서 단지를 선택하세요.</p></div></div><div class="map" id="map" tabindex="0" aria-label="동작구 지도. 방향키로 이동하고 더하기와 빼기로 확대 및 축소할 수 있습니다."></div>';
+    detail.innerHTML = map + '<div class="detail-head"><h3>단지 지도</h3><p>순위, 아파트 목록 또는 추천매물에서 단지를 선택하세요.</p></div>';
     drawMap();
     return;
   }
-  const query = ['서울 동작구',catalogMatch(row)?.address || row.address,row.name].filter(Boolean).join(' ');
-  const mapUrl = 'https://map.naver.com/p/search/' + encodeURIComponent(query);
-  detail.innerHTML = '<div class="detail-head"><div><h3>' + escape(row.name) + '</h3><p>' + icon('pin') + ' ' + escape([row.dong || row.admin, catalogMatch(row)?.address || row.address].filter(Boolean).join(' · ')) +
-    (row.fromListing ? ' · ' + (row.sample ? '샘플 매물' : '등록 매물') + ' ' + label[row.type] + ' ' + transactionPrice(row) : '') + '</p></div><a class="map-link" href="' + escape(mapUrl) + '" target="_blank" rel="noopener">네이버 지도에서 보기 ' + icon('arrow') + '</a></div><div class="map" id="map" tabindex="0" aria-label="선택한 단지 주변 지도. 방향키로 이동하고 더하기와 빼기로 확대 및 축소할 수 있습니다."></div><div class="recent" id="recent"></div>';
+  const address = catalogMatch(row)?.address || row.address;
+  const mapUrl = state.geo ? 'https://map.kakao.com/link/map/' + encodeURIComponent(row.name) + ',' + state.geo.lat + ',' + state.geo.lon : link([address,row.name].filter(Boolean).join(' '));
+  const trade = label[row.fromListing ? row.type : state.trade];
+  detail.innerHTML = map + '<div class="detail-head"><span class="subtle">' +
+    escape([row.dong || row.admin, trade, row.fromListing ? (row.sample ? '샘플 매물' : '등록 매물') : '단지 정보'].filter(Boolean).join(' · ')) +
+    '</span><h3>' + escape(row.name) + '</h3><p>' + escape(address ? '서울 동작구 ' + address.replace(/^(?:서울(?:특별시)?\s*)?동작구\s*/, '') : '주소 확인 중') +
+    (row.fromListing ? ' · ' + transactionPrice(row) : '') + '</p><div class="detail-actions"><a class="map-link" href="' +
+    escape(mapUrl) + '" target="_blank" rel="noopener">카카오맵에서 보기 ' + icon('arrow') +
+    '</a><a class="small secondary" href="#location">입지 분석</a></div></div><div class="recent" id="recent"></div>';
   drawMap();
   renderRecent();
 }
