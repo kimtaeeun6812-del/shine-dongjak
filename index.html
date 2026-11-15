@@ -4263,7 +4263,7 @@ function drawMap() {
         .filter(layer => tile.paths[layer] && (zoom >= 16 || !['buildings','path'].includes(layer)))
         .map(layer => '<path class="map-' + layer + '" d="' + tile.paths[layer] + '"/>').join('');
       paths.push('<svg x="' + tileX + '" y="' + tileY + '" width="1024" height="1024" viewBox="0 0 1024 1024" overflow="hidden">' + tilePaths + '</svg>');
-      names.push(...tile.labels.map(([px,py,name,kind]) => [tileX+px,tileY+py,name,kind]));
+      names.push(...tile.labels.filter(([, , ,kind]) => kind !== 'station').map(([px,py,name,kind]) => [tileX+px,tileY+py,name,kind]));
     }
   }
   for (const [dong,coordinates] of Object.entries(centers)) names.push([...mapPosition(...coordinates),dong,'place']);
@@ -4284,7 +4284,7 @@ function drawMap() {
   }
   const seen = new Set();
   const textLabels = [];
-  const priority = {station:0,park:1,place:2,facility:3,school:4,water:5,street:6};
+  const priority = {park:0,station:1,place:2,facility:3,school:4,water:5,street:6};
   names.sort((a,b) => priority[a[3]] - priority[b[3]]);
   for (const [px,py,name,kind] of names) {
     if (seen.has(name) || (kind === 'street' && zoom < 16)) continue;
