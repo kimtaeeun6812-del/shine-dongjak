@@ -72,6 +72,21 @@ html{scroll-padding-top:190px}
 #ranking .filter-error:not(:empty){margin-bottom:12px}
 .map-note,.map-controls button,.marker strong{background:#fff9eddc;color:#463827;border-color:#c7ae83}
 .marker strong{background:#fff9ed;box-shadow:0 3px 9px #51392040}
+
+.map-rank,.map-place{position:absolute;transform:translate(-50%,-50%);white-space:nowrap}
+.map-rank{z-index:4;width:26px;height:26px;padding:0;border:2px solid #fff9ed;border-radius:50%;background:#234f39;color:white;font-size:11px;font-weight:900;box-shadow:0 2px 6px #30291c66}
+.map-rank[aria-pressed="true"]{background:#8b4e20}
+.map-place{z-index:2;padding:1px 4px;border-radius:4px;background:#fffcf0ed;color:#493620;font-size:10px;font-weight:800}
+a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:underline}
+.map-place-station{color:#244d83}.map-place-park{color:#285a3e}
+.map-controls,.map-note{z-index:6}
+.map-popup{position:absolute;z-index:8;bottom:20px;left:50%;transform:translateX(-50%);width:min(310px,calc(100% - 36px));padding:10px 12px;background:#fffaf1;color:#362718;border:1px solid #bfa273;border-radius:10px;box-shadow:0 4px 20px #30291c55;cursor:auto;touch-action:auto;user-select:text}
+.map-popup header{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.map-popup button{border:0;background:transparent;font-size:20px;line-height:1}
+.map-popup dl{margin:5px 0 0}.map-popup dl div{display:grid;grid-template-columns:40px 1fr;gap:5px;border-top:1px solid #e9dcc6;padding:4px 0}
+.map-popup dd{margin:0}.map-popup small{display:block;color:#685746}
+.map-rank-leaders{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
+.map-rank-leaders line{stroke:#315e46;stroke-width:1.4}
 </style>
 </head>
 <body>
@@ -3728,7 +3743,11 @@ const osmPlaces = [
   ["반포2동 주민센터","관공서",37.504477,126.9983]
 ];
 
-const allPlaces = [...places,...osmPlaces];
+const parkPlaces = [
+  ['사육신공원','공원',37.513458,126.949411],
+  ['보라매공원','공원',37.493301,126.919624]
+];
+const allPlaces = [...places,...osmPlaces,...parkPlaces];
 
 const $ = selector => document.querySelector(selector);
 const icon = name => '<svg aria-hidden="true"><use href="#i-' + name + '"/></svg>';
@@ -4043,10 +4062,13 @@ function render(autoSelect) {
 function pointFor(row) {
   return catalogMatch(row)?.point ?? row.point ?? null;
 }
-async function selectApt(row) {
+async function selectApt(row, keepMap = false) {
   state.selected = row;
-  state.zoom = row ? 16 : 14;
-  state.mapCenter = null;
+  if (!keepMap) {
+    state.zoom = row ? 16 : 14;
+    state.mapCenter = null;
+    state.mapPopup = null;
+  }
   state.geo = row ? pointFor(row) : null;
   state.recent = null;
   state.recentStatus = '';
@@ -4152,16 +4174,65 @@ function radiusLegend() {
   return '<span class="map-radius-legend">단지 대표 위치 기준 반경 ' + locationRadius + 'm</span>';
 }
 
+
+function rankPins() {
+  return (state.ranking ?? []).flatMap((row, index) => {
+    const point = pointFor(row);
+    return point ? [{row,index,position:mapPosition(point.lat,point.lon)}] : [];
+  });
+}
+
+function rankedPopup(row) {
+  const rows = recentSnapshot.filter(entry => same(row,entry)).sort((a,b) => b.date.localeCompare(a.date));
+  return '<aside class="map-popup" role="region" aria-label="단지 최근 실거래"><header><strong>' + escape(row.name) +
+    '</strong><button type="button" data-close-map-popup aria-label="거래 팝업 닫기">×</button></header><dl>' +
+    Object.entries(label).map(([type,name]) => {
+      const entry = rows.find(item => item.type === type);
+      return '<div><dt>' + name + '</dt><dd>' + (entry ? '<b>' + transactionPrice(entry) + '</b><small>전용 ' +
+        entry.area.toFixed(2) + '㎡ · ' + entry.date + '</small>' : '수록 기간 거래 없음') + '</dd></div>';
+    }).join('') + '</dl><small>국토교통부 신고 자료 · 2026.09~11.15</small></aside>';
+}
+
+function drawRankPins(pins,left,top,units,width,height) {
+  const placed = [];
+  const leaders = [];
+  const buttons = [];
+  const offsets = [[0,0],[27,0],[-27,0],[0,27],[0,-27],[27,27],[-27,27],[27,-27],[-27,-27],[54,0],[-54,0],[0,54],[0,-54]];
+  for (const {row,index,position} of pins) {
+    const px = (position[0]-left)/units, py = (position[1]-top)/units;
+    if (px < 0 || py < 0 || px > width || py > height) continue;
+    const positions = offsets.map(([dx,dy]) => [Math.max(15,Math.min(width-15,px+dx)),Math.max(15,Math.min(height-15,py+dy))]);
+    const [x,y] = positions.find(([x,y]) => placed.every(([rx,ry]) => Math.hypot(x-rx,y-ry) >= 26)) ?? positions[0];
+    placed.push([x,y,30]);
+    if (Math.hypot(px-x,py-y) > 1) leaders.push('<line x1="'+px+'" y1="'+py+'" x2="'+x+'" y2="'+y+'"/>');
+    buttons.push('<button type="button" class="map-rank" data-map-rank="'+index+'" style="left:'+x+'px;top:'+y+'px" aria-label="'+(index+1)+'위 '+escape(row.name)+'" aria-pressed="'+(row.id===state.selected?.id)+'">'+(index+1)+'</button>');
+  }
+  return {placed,html:'<svg class="map-rank-leaders" aria-hidden="true">'+leaders.join('')+'</svg>'+buttons.join('')};
+}
+
 function drawMap() {
   const map = $('#map');
   if (!map) return;
   const row = state.selected;
   const exact = state.geo;
   const [lat,lon] = exact ? [exact.lat,exact.lon] : (centers[row?.dong] ?? [37.499,126.948]);
-  const zoom = state.zoom;
   const width = map.clientWidth;
   const height = map.clientHeight;
   if (!width || !height) return;
+  const pins = rankPins();
+  if (state.mapCenter === null && pins.length) {
+    const axes = [0,1].map(axis => pins.map(pin => pin.position[axis]));
+    const [minX,minY] = axes.map(values => Math.min(...values));
+    const [maxX,maxY] = axes.map(values => Math.max(...values));
+    state.mapCenter = [(minX+maxX)/2,(minY+maxY)/2];
+    state.zoom = 16;
+    while (state.zoom > 12) {
+      const scale = mapTileSize / 256 * 2**(14-state.zoom);
+      if ((maxX-minX)/scale <= width-96 && (maxY-minY)/scale <= height-90) break;
+      state.zoom--;
+    }
+  }
+  const zoom = state.zoom;
 
   const units = mapTileSize / 256 * 2**(14-zoom);
   const home = mapPosition(lat,lon);
@@ -4178,7 +4249,7 @@ function drawMap() {
   const bottom = y + height * units / 2;
   const [pinX,pinY] = [(home[0]-left)/units,(home[1]-top)/units];
   const pinVisible = exact && pinX >= 0 && pinY >= 0 && pinX <= width && pinY <= height;
-  const marker = pinVisible ? '<span class="marker" style="left:' + pinX + 'px;top:' + pinY + 'px"><strong>' + escape(row.name) + '</strong><span class="marker-dot"></span></span>' : '';
+  const marker = pinVisible && !pins.some(pin => pin.row.id === row.id) ? '<span class="marker" style="left:' + pinX + 'px;top:' + pinY + 'px"><strong>' + escape(row.name) + '</strong><span class="marker-dot"></span></span>' : '';
   const caption = exact ? '동작구 공개자료 · 단지 대표 위치' : row ? (row.dong || row.admin || '동작구') + ' 중심 · 단지 좌표 미확인' : '동작구';
   const paths = [];
   const names = [];
@@ -4200,10 +4271,20 @@ function drawMap() {
     if (type === '철도·지하철') names.push([...mapPosition(lat,lon),name.replace(/\s+\d+호선$/, '').replace(/역$/, '') + '역','station']);
     if (zoom >= 16 && ['초등학교','중학교','고등학교'].includes(type)) names.push([...mapPosition(lat,lon),name,'school']);
   }
-  const reserved = pinVisible ? [[pinX,pinY-18,Math.max(100,row.name.length*13+22)]] : [];
+  const ranks = drawRankPins(pins,left,top,units,width,height);
+  const reserved = ranks.placed;
+  const placeLabels = [];
+  const parkNames = /(?:공원|놀이터|녹지)$/;
+  for (const [name,type,lat,lon] of allPlaces) {
+    if (type === '버스' || type === '철도·지하철') continue;
+    if (parkNames.test(name)) names.push([...mapPosition(lat,lon),name,'park']);
+    else if (/병원|구청|도서관|주민센터|문화센터|시장|마트|백화점/.test(name)) {
+      if (zoom >= 15 || /병원|구청|도서관|시장/.test(name)) names.push([...mapPosition(lat,lon),name,'facility']);
+    }
+  }
   const seen = new Set();
   const textLabels = [];
-  const priority = {station:0,water:1,school:2,place:3,street:4};
+  const priority = {station:0,park:1,place:2,facility:3,school:4,water:5,street:6};
   names.sort((a,b) => priority[a[3]] - priority[b[3]]);
   for (const [px,py,name,kind] of names) {
     if (seen.has(name) || (kind === 'street' && zoom < 16)) continue;
@@ -4214,9 +4295,17 @@ function drawMap() {
     if (reserved.some(([rx,ry,w]) => Math.abs(ry-ly) < 20 && Math.abs(rx-lx) < (w+labelWidth)/2)) continue;
     reserved.push([lx,ly,labelWidth]);
     seen.add(name);
+    if (['station','park','facility','school','place'].includes(kind)) {
+      const style = ' class="map-place map-place-' + kind + '" style="left:' + lx + 'px;top:' + ly + 'px"';
+      placeLabels.push(kind === 'place' ? '<span' + style + '>' + escape(name) + '</span>' :
+        '<a' + style + ' href="https://map.kakao.com/link/map/' + encodeURIComponent(name) + ',' +
+        (Math.atan(Math.sinh(Math.PI * (1-2*py/mapWorld)))*180/Math.PI) + ',' + (px/mapWorld*360-180) +
+        '" target="_blank" rel="noopener" aria-label="' + escape(name) + ' 카카오맵에서 보기">' + escape(name) + '</a>');
+      continue;
+    }
     textLabels.push('<text class="map-label map-label-' + kind + '" x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '">' + escape(name) + '</text>');
   }
-  const controls = '<div class="map-controls"><button type="button" data-zoom="1" aria-label="지도 확대"' + (zoom===18?' disabled':'') + '>+</button><button type="button" data-zoom="-1" aria-label="지도 축소"' + (zoom===14?' disabled':'') + '>−</button><button type="button" data-map-reset aria-label="선택한 단지로 돌아가기" title="선택한 단지로 돌아가기">⌖</button><button type="button" data-vworld-key aria-label="브이월드 키 설정" title="브이월드 키 설정">⚙</button></div>';
+  const controls = '<div class="map-controls"><button type="button" data-zoom="1" aria-label="지도 확대"' + (zoom===18?' disabled':'') + '>+</button><button type="button" data-zoom="-1" aria-label="지도 축소"' + (zoom===12?' disabled':'') + '>−</button><button type="button" data-map-reset aria-label="Top 10 전체 보기" title="Top 10 전체 보기">⌖</button><button type="button" data-vworld-key aria-label="브이월드 키 설정" title="브이월드 키 설정">⚙</button></div>';
   const metersPerPixel = Math.cos(lat * Math.PI / 180) * 40075017 / mapWorld * units;
   const distance = zoom >= 17 ? 50 : zoom >= 15 ? 100 : 500;
   const scaleWidth = Math.round(distance / metersPerPixel);
@@ -4224,7 +4313,7 @@ function drawMap() {
   const focused = document.activeElement;
   const control = map.contains(focused) && focused.matches('button') ? focused.getAttribute('aria-label') : null;
   map.innerHTML = '<svg class="map-vector" viewBox="' + [left,top,width*units,height*units].join(' ') + '" aria-hidden="true">' + paths.join('') + '</svg>' + area +
-    '<svg class="map-labels" viewBox="0 0 ' + width + ' ' + height + '" aria-hidden="true">' + textLabels.join('') + '</svg>' +
+    '<svg class="map-labels" viewBox="0 0 ' + width + ' ' + height + '" aria-hidden="true">' + textLabels.join('') + '</svg>' + placeLabels.join('') + ranks.html + (state.mapPopup ? rankedPopup(state.mapPopup) : '') +
     '<span class="map-note">' + escape(caption) + '</span>' + controls + marker + (exact ? radiusLegend() : '') +
     '<span class="map-scale" style="width:' + scaleWidth + 'px">' + distance + 'm</span>' +
     '<a class="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>';
@@ -4361,12 +4450,13 @@ function selectAndRevealMap(row) {
 }
 const mapPanel = $('#detail');
 function zoomMap(delta) {
-  state.zoom = Math.min(18,Math.max(14,state.zoom + delta));
+  state.zoom = Math.min(18,Math.max(12,state.zoom + delta));
   drawMap();
 }
 function resetMap() {
   state.mapCenter = null;
   state.zoom = state.selected ? 16 : 14;
+  state.mapPopup = null;
   drawMap();
 }
 function moveMap(dx,dy) {
@@ -4376,6 +4466,21 @@ function moveMap(dx,dy) {
   drawMap();
 }
 mapPanel.addEventListener('click', event => {
+  const index = event.target.closest('[data-map-rank]')?.dataset.mapRank;
+  if (index !== undefined) {
+    const row = state.ranking[Number(index)];
+    state.mapPopup = row;
+    void selectApt(row,true);
+    $('#map [data-close-map-popup]')?.focus({preventScroll:true});
+    return;
+  }
+  if (event.target.closest('[data-close-map-popup]')) {
+    const index = state.ranking.findIndex(row => row.id === state.mapPopup?.id);
+    state.mapPopup = null;
+    drawMap();
+    $('#map [data-map-rank="' + index + '"]')?.focus({preventScroll:true});
+    return;
+  }
   if (event.target.closest('[data-map-reset]')) resetMap();
   const delta = event.target.closest('[data-zoom]')?.dataset.zoom;
   if (delta) zoomMap(Number(delta));
@@ -4393,7 +4498,7 @@ mapPanel.addEventListener('keydown', event => {
 let mapDrag;
 mapPanel.addEventListener('pointerdown', event => {
   const map = event.target.closest('#map');
-  if (!map || !event.isPrimary || event.button !== 0 || event.target.closest('button,a')) return;
+  if (!map || !event.isPrimary || event.button !== 0 || event.target.closest('button,a,.map-popup')) return;
   map.setPointerCapture(event.pointerId);
   mapDrag = {map,id:event.pointerId,x:event.clientX,y:event.clientY};
   map.classList.add('dragging');
