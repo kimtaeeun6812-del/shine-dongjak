@@ -207,13 +207,13 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
 .index-market h2{margin:0;color:#315e46;font-size:clamp(24px,3vw,36px);letter-spacing:-.045em}
 .index-market-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:8px;margin-bottom:14px}
 .index-market-head p{margin:4px 0 0}
-.index-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.index-card{min-width:0;border:1px solid #e3d5c7;border-top:3px solid var(--index-accent);border-radius:14px;background:#fffdf9;padding:clamp(11px,1.5vw,18px);box-shadow:0 5px 14px #6852390b}
+.index-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.index-card{min-width:0;border:1px solid var(--index-accent);border-top-width:3px;border-radius:14px;background:#fffdf9;padding:clamp(11px,1.5vw,18px);box-shadow:0 5px 14px #6852390b}
 .index-card h3{margin:0;font-size:17px;letter-spacing:-.035em}
-.index-card-header{display:flex;gap:9px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-.index-change{grid-column:1/-1;--index-accent:#ad783e}
+#index-change-mode{width:max-content;margin-top:9px}
+.index-change{--index-accent:#ad783e}
 .index-card[data-index="sale"]{--index-accent:#8756ad}
-.index-card[data-index="lease"]{--index-accent:#4679a4}
+.index-card[data-index="lease"]{--index-accent:#42816d}
 .index-chart{width:100%;height:auto;display:block;overflow:visible}
 .index-chart text{fill:#6d5d4e;font-size:11px;font-family:var(--font)}
 .index-gridline{stroke:#e8dfd3;stroke-width:1}
@@ -230,7 +230,8 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
 .index-values th:first-child,.index-values td:first-child{text-align:left}
 .index-values thead{background:#f3ebdf}
 .index-market .market-note{line-height:1.5}
-@media(max-width:720px){.index-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){.index-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:610px){.index-grid{grid-template-columns:minmax(0,1fr)}}
 
 .dong-browser{grid-template-columns:minmax(0,.76fr) minmax(0,.82fr) minmax(0,1fr);gap:12px}
 .dong-preview{min-height:220px;display:flex;flex-direction:column;background:#fffaf0;border:1px solid #ded2be}
@@ -402,8 +403,9 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
         <article class="index-card" data-index="sale"><h3>아파트 매매가격지수 <small class="subtle">월간</small></h3><div id="index-sale"></div></article>
         <article class="index-card" data-index="lease"><h3>아파트 전세가격지수 <small class="subtle">월간</small></h3><div id="index-lease"></div></article>
         <article class="index-card index-change">
-          <div class="index-card-header"><h3>매매·전세 지수 변동률 <small class="subtle">전월 대비</small></h3><div id="index-change-mode" class="segment" role="group" aria-label="변동률 거래 유형"><button type="button" data-index-kind="sale" class="active" aria-pressed="true">매매</button><button type="button" data-index-kind="lease" aria-pressed="false">전세</button></div></div>
+          <h3>매매·전세 지수 변동률 <small class="subtle">전월 대비</small></h3>
           <div id="index-change"></div>
+          <div id="index-change-mode" class="segment" role="group" aria-label="변동률 거래 유형"><button type="button" data-index-kind="sale" class="active" aria-pressed="true">매매</button><button type="button" data-index-kind="lease" aria-pressed="false">전세</button></div>
         </article>
       </div>
       <p class="market-note">지수 기준 2026년 6월 = 100 · 변동률은 전월 지수 대비 증감률입니다. <a href="https://www.reb.or.kr/r-one/portal/stat/easyStatPage/A_2024_00045.do" target="_blank" rel="noopener">한국부동산원 매매가격지수</a> · <a href="https://www.reb.or.kr/r-one/portal/stat/easyStatPage/A_2024_00050.do" target="_blank" rel="noopener">전세가격지수</a></p>
@@ -4750,11 +4752,11 @@ function indexCurve(points) {
   }).join(' ');
 }
 function renderIndexChart(target, rows, isRate = false) {
-  const height = isRate ? 175 : 220;
+  const height = 220;
   const bottom = height-31;
   const top = 15;
   const left = 49;
-  const right = 502;
+  const right = 392;
   const observed = rows.flatMap(row=>row.slice(1));
   const min = Math.min(...observed,isRate?0:100);
   const max = Math.max(...observed,isRate?0:100);
@@ -4772,7 +4774,7 @@ function renderIndexChart(target, rows, isRate = false) {
   }).join('');
   const baseline = isRate ? 0 : 100;
   const zero = '<line class="index-zero" x1="'+left+'" x2="'+right+'" y1="'+y(baseline)+'" y2="'+y(baseline)+'"/>';
-  const months = rows.map(([month],i) => i===0 || i===rows.length-1 || (i%3===0 && i<rows.length-1) ?
+  const months = rows.map(([month],i) => i===0 || i===rows.length-1 || i===Math.floor((rows.length-1)/2) ?
     '<text x="'+x(i)+'" y="'+(height-8)+'" text-anchor="'+(i===0?'start':i===rows.length-1?'end':'middle')+'">'+indexMonth(month)+'</text>' : '').join('');
   const lines = indexColors.map((color,k) => {
     const points = rows.map((row,i) => [x(i),y(row[k+1])]);
@@ -4782,7 +4784,7 @@ function renderIndexChart(target, rows, isRate = false) {
   const legend = '<div class="index-series">'+indexRegions.map((region,i)=>'<span class="index-legend"><i style="--legend:'+indexColors[i]+'"></i>'+region+' <strong>'+valueText(latest[i+1])+'</strong></span>').join('')+'</div>';
   const table = '<details class="index-values"><summary>월별 수치 보기</summary><table><thead><tr><th scope="col">기준월</th><th scope="col">서울 전체</th><th scope="col">동작구</th></tr></thead><tbody>'+
     rows.slice().reverse().map(([month,seoul,dongjak]) => '<tr><th scope="row">'+indexMonth(month)+'</th><td>'+valueText(seoul)+'</td><td>'+valueText(dongjak)+'</td></tr>').join('')+'</tbody></table></details>';
-  $(target).innerHTML = legend+'<svg class="index-chart" viewBox="0 0 520 '+height+'" role="img" aria-label="서울 전체와 동작구 월별 추이. 아래 월별 수치 표에서 값을 확인할 수 있습니다.">'+labels+zero+months+lines+'</svg>'+table;
+  $(target).innerHTML = legend+'<svg class="index-chart" viewBox="0 0 410 '+height+'" role="img" aria-label="서울 전체와 동작구 월별 추이. 아래 월별 수치 표에서 값을 확인할 수 있습니다.">'+labels+zero+months+lines+'</svg>'+table;
 }
 function initializeMarketIndicators() {
   const months = monthlyPriceIndexes.slice(1);
