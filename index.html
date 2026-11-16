@@ -341,6 +341,14 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
  #location .location-card header{gap:5px}
  #location .location-card h3{font-size:14px}
 }
+
+.dong-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:17px}
+.dong-actions #dong-trade{margin:0}
+#dong-location{font-size:13px;color:#315e46}
+.location-picker{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 13px}
+.location-picker button{min-height:34px;padding:5px 9px;border:1px solid #ddd1bd;border-radius:8px;background:#fbf4e7;color:#564434;font-size:12px;font-weight:800}
+.location-picker button:hover{background:#f0e4cf}
+.location-picker button[aria-pressed="true"]{border-color:#315e46;background:#315e46;color:#fff}
 </style>
 </head>
 <body>
@@ -439,7 +447,7 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
             <button class="dong-option" type="button" data-dong-card="대방동" aria-pressed="false">대방동</button>
             <button class="dong-option" type="button" data-dong-card="신대방동" aria-pressed="false">신대방동</button>
           </div>
-          <button class="primary" type="button" id="dong-trade">흑석동 거래 보기</button>
+          <div class="dong-actions"><button class="primary" type="button" id="dong-trade">흑석동 거래 보기</button><button class="secondary" type="button" id="dong-location">흑석동 입지 보기</button></div>
         </div>
       </div>
       <details class="photo-credits"><summary>사진 출처 및 이용 조건</summary><ul><li><a href="https://commons.wikimedia.org/wiki/File:Noryangjin_Station_in_2018.jpg" target="_blank" rel="noopener">노량진동 · Noryangjin Station in 2018.jpg</a><span>Garam · Attribution</span></li><li><a href="https://commons.wikimedia.org/wiki/File:%EC%96%91%EB%85%95%EB%8C%80%EA%B5%B0_%EC%9D%B4%EC%A0%9C_%EB%AC%98%EC%97%AD_-_%EC%A7%80%EB%8D%95%EC%82%AC%EB%B6%80%EB%AC%98%EC%86%8C.jpg" target="_blank" rel="noopener">상도동 · 양녕대군 이제 묘역</a><span>문화재청 · <a href="https://www.kogl.or.kr/info/licenseType1.do" target="_blank" rel="noopener">공공누리 제1유형</a> · 화면에 맞게 자르고 밝기 조정</span></li><li><a href="https://commons.wikimedia.org/wiki/File:Soongsil_University_2.JPG" target="_blank" rel="noopener">상도1동 · Soongsil University 2.JPG</a><span>hyolee2 · <a href="https://creativecommons.org/licenses/by-sa/3.0" target="_blank" rel="noopener">CC BY-SA 3.0</a> · 화면에 맞게 자르고 밝기 조정</span></li><li><a href="https://commons.wikimedia.org/wiki/File:%EB%85%B8%EB%93%A4%EC%84%AC,_%ED%95%9C%EA%B0%95%EB%8C%80%EA%B5%90,_%ED%95%9C%EA%B0%95%EC%B2%A0%EA%B5%90_06U01202Ba42000.jpg" target="_blank" rel="noopener">본동 · 06U01202Ba42000.jpg</a><span>The Seoul Research Data Service · <a href="https://creativecommons.org/licenses/by/4.0" target="_blank" rel="noopener">CC BY 4.0</a></span></li><li><a href="https://commons.wikimedia.org/wiki/File:Seoul_Skies_(237684105).jpeg" target="_blank" rel="noopener">흑석동 · Seoul Skies</a><span>James Doyle · <a href="https://creativecommons.org/licenses/by/3.0" target="_blank" rel="noopener">CC BY 3.0</a> · 화면에 맞게 자름</span></li><li><a href="https://commons.wikimedia.org/wiki/File:Seoul_National_Cemetery_panorama.jpg" target="_blank" rel="noopener">동작동 · Seoul National Cemetery panorama.jpg</a><span>LinasD · <a href="https://creativecommons.org/licenses/by-sa/3.0" target="_blank" rel="noopener">CC BY-SA 3.0</a></span></li><li><a href="https://commons.wikimedia.org/wiki/File:Seoul-metro-737-Namseong-station-entrance-1-20191023-131236.jpg" target="_blank" rel="noopener">사당동 · Seoul-metro-737-Namseong-station-entrance-1-20191023-131236.jpg</a><span>LERK · <a href="https://creativecommons.org/licenses/by-sa/4.0" target="_blank" rel="noopener">CC BY-SA 4.0</a> · 화면에 맞게 자르고 밝기 조정</span></li><li><a href="https://commons.wikimedia.org/wiki/File:Daebang_-_panoramio.jpg" target="_blank" rel="noopener">대방동 · Daebang - panoramio.jpg</a><span>dokaspar · <a href="https://creativecommons.org/licenses/by-sa/3.0" target="_blank" rel="noopener">CC BY-SA 3.0</a></span></li><li><a href="https://commons.wikimedia.org/wiki/File:20250528_%EB%B3%B4%EB%9D%BC%EB%A7%A4%EA%B3%B5%EC%9B%90_%EC%97%B0%EB%AA%BB,_%EB%82%A8%EB%AC%B8_%EB%B0%A9%ED%96%A5.jpg" target="_blank" rel="noopener">신대방동 · 20250528 보라매공원 연못, 남문 방향.jpg</a><span>Striker9498 · <a href="http://creativecommons.org/publicdomain/zero/1.0/deed.en" target="_blank" rel="noopener">CC0</a></span></li></ul></details>
@@ -532,9 +540,10 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
     </section>
 
     <section id="location" aria-labelledby="location-title">
-      <div class="section-head"><div><div class="eyebrow">03 <b>/</b> NEIGHBORHOOD</div><h2 id="location-title">단지 입지 분석</h2></div><span id="location-caption" class="subtle"></span></div>
+      <div class="section-head"><div><div class="eyebrow">03 <b>/</b> NEIGHBORHOOD</div><h2 id="location-title">입지 분석</h2></div><span id="location-caption" class="subtle"></span></div>
+      <div class="location-picker" id="location-picker" role="group" aria-label="입지 분석 지역 선택"></div>
       <div class="location-grid" id="location-grid"></div>
-      <p class="footnote">시설 거리는 단지 좌표 기준 직선거리입니다. 학교 배정과 정비사업 단계는 관할 기관에서 확인하세요.</p>
+      <p class="footnote">시설 거리는 선택한 단지 또는 동네 중심을 기준으로 한 직선거리입니다. 학교 배정과 정비사업 단계는 관할 기관에서 확인하세요.</p>
     </section>
 
     <section id="listings" aria-labelledby="listing-title">
@@ -4550,6 +4559,7 @@ function pointFor(row) {
   return catalogMatch(row)?.point ?? row.point ?? null;
 }
 async function selectApt(row, keepMap = false) {
+  state.locationDong = null;
   state.selected = row;
   if (!keepMap) {
     state.zoom = row ? 16 : 14;
@@ -4959,13 +4969,40 @@ function renderRecent() {
 }
 const mapsByType = ['철도·지하철','버스'];
 const shopsByType = ['마트','백화점','카페','관공서','전통시장','공공시설'];
+function showLocationDong(dong) {
+  state.locationDong = legalDongs.includes(dong) ? dong : null;
+  renderLocation();
+}
+function initializeLocationPicker() {
+  const picker = $('#location-picker');
+  picker.innerHTML = [['apartment','선택 단지'], ...legalDongs.map(dong => [dong,dong])]
+    .map(([value,name]) => '<button type="button" data-location-dong="' + value + '" aria-pressed="false">' + name + '</button>')
+    .join('');
+  picker.addEventListener('click',event => {
+    const button = event.target.closest('[data-location-dong]');
+    if (button) showLocationDong(button.dataset.locationDong);
+  });
+  $('#dong-location').addEventListener('click',() => {
+    showLocationDong(previewDong);
+    $('#location').scrollIntoView({block:'start'});
+  });
+}
+
 function renderLocation() {
-  const row = state.selected;
-  $('#location-caption').textContent = row ? row.name + ' · ' + (row.dong || row.admin) : '단지를 선택하세요';
-  const fallback = row ? (neighborhood[row.dong] ?? []).map(([name,type]) => ({name,type})) : [];
-  const points = state.geo ? allPlaces.map(([name,type,lat,lon]) => ({
+  const selectedDong = state.locationDong;
+  const row = selectedDong ? null : state.selected;
+  const dong = selectedDong || row?.dong;
+  const center = selectedDong ? centers[selectedDong] : null;
+  const point = center ? {lat:center[0],lon:center[1]} : state.geo;
+  $('#location-caption').textContent = selectedDong ? selectedDong + ' · 동네 중심 기준' :
+    row ? row.name + ' · ' + (row.dong || row.admin || '동작구') : '동 또는 단지를 선택하세요';
+  for (const button of $('#location-picker').querySelectorAll('button')) {
+    button.setAttribute('aria-pressed', String(button.dataset.locationDong === (selectedDong || 'apartment')));
+  }
+  const fallback = (neighborhood[dong] ?? []).map(([name,type]) => ({name,type}));
+  const points = point ? allPlaces.map(([name,type,lat,lon]) => ({
     name,type,lat,lon,
-    distance:Math.round(Math.hypot((lat-state.geo.lat)*111320,(lon-state.geo.lon)*88200))
+    distance:Math.round(Math.hypot((lat-point.lat)*111320,(lon-point.lon)*88200))
   })) : [];
   function facilities(types) {
     const selected = [];
@@ -4979,27 +5016,27 @@ function renderLocation() {
     return selected.filter((entry,i) => selected.findIndex(other => other.name === entry.name) === i);
   }
   const transport = facilities(mapsByType);
-  if (row) {
+  if (dong || row) {
     const ktx = points.filter(item => /^(용산역|서울역|영등포역) 1호선$/.test(item.name)).sort((a,b) => a.distance-b.distance)[0];
     const station = ktx ? ktx.name.split(' ')[0] : '용산역';
     transport.push({name:station,type:'KTX 접근 참고',distance:ktx?.distance,query:station + ' KTX'});
   }
   const shops = facilities(shopsByType);
-  if (row) {
+  if (dong || row) {
     for (const type of ['마트','백화점','카페']) {
       if (shops.some(item => item.type === type)) continue;
-      shops.push({name:type + ' 주변 검색',type:'지도 검색',query:'동작구 ' + (row.dong || row.admin) + ' ' + type});
+      shops.push({name:type + ' 주변 검색',type:'지도 검색',query:'동작구 ' + (dong || row?.admin || '') + ' ' + type});
     }
   }
   const cards = [
     ['train','교통',transport],
     ['school','학군',facilities(['초등학교','중학교','고등학교','학교'])],
     ['shop','상권·생활',shops],
-    ['plan','개발계획',row ? (plans[row.dong] ?? ['동작구 도시정비 공고']).map(name => ({name,type:'공고 참고',href:name.includes('지구단위계획') ? districtPlan : planLink})) : []]
+    ['plan','개발계획',(dong || row) ? (plans[dong] ?? ['동작구 도시정비 공고']).map(name => ({name,type:'공고 참고',href:name.includes('지구단위계획') ? districtPlan : planLink})) : []]
   ];
   $('#location-grid').innerHTML = cards.map(([ico,title,items]) => {
-    const note = !row ? '선택한 단지의 주변 정보를 표시합니다.' : ico === 'plan' ? '동·생활권 단위 참고 · 최신 단계는 공고 확인' :
-      ico === 'school' && state.geo ? '서울시교육청 학교 위치 · 배정 학교 별도 확인' : state.geo ? '공개 좌표로 계산 · 거리 없는 항목은 생활권 참고' : '생활권 참고 · 단지별 거리 미확인';
+    const note = !dong && !row ? '선택한 동 또는 단지의 주변 정보를 표시합니다.' : ico === 'plan' ? '동·생활권 단위 참고 · 최신 단계는 공고 확인' :
+      ico === 'school' && point ? '서울시교육청 학교 위치 · 배정 학교 별도 확인' : point ? (selectedDong ? '동네 중심 기준 직선거리' : '단지 좌표 기준 직선거리') + ' · 거리 없는 항목은 생활권 참고' : '생활권 참고 · 단지별 거리 미확인';
     return '<article class="card location-card" data-kind="' + ico + '"><header><span class="location-icon">' + icon(ico) + '</span><h3>' + title + '</h3></header>' + items.map(item => {
       const href = item.href || (item.query ? 'https://map.kakao.com/?q=' + encodeURIComponent(item.query) : item.lat ? 'https://www.openstreetmap.org/?mlat=' + item.lat + '&mlon=' + item.lon + '#map=17/' + item.lat + '/' + item.lon : link(item.name));
       return '<div class="poi-line"><a href="' + href + '" target="_blank" rel="noopener">' + escape(item.name) + '</a><span>' + (item.distance == null ? escape(item.type) : escape(item.type) + ' · ' + formatted(item.distance) + 'm') + '</span></div>';
@@ -5040,6 +5077,7 @@ function previewNeighborhood(dong) {
   $('#dong-intro-transit').textContent = transit;
   $('#dong-intro-places').textContent = places;
   $('#dong-trade').textContent = dong + ' 거래 보기';
+  $('#dong-location').textContent = dong + ' 입지 보기';
   for (const button of $('#dong-gallery').querySelectorAll('[data-dong-card]')) {
     button.setAttribute('aria-pressed',String(button.dataset.dongCard === dong));
   }
@@ -5208,6 +5246,7 @@ renderListings();
 initializeMarket();
 initializeRecentMarket();
 initializeMarketIndicators();
+initializeLocationPicker();
 void refresh();
 
 </script>
