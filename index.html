@@ -155,18 +155,25 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
 .market-stat .fall{color:#953648}.market-stat .rise{color:#315e46}
 @media(max-width:640px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.market-filters .field{flex:1 1 42%}.market-panel-head{flex-wrap:wrap}.market-stat strong{font-size:18px}}
 
-#market-summary .market-comparison{margin-top:20px}
-.market-comparison h3{margin:0;color:#315e46;font-size:clamp(18px,2vw,25px);letter-spacing:-.04em}
-.comparison-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.comparison-chart{padding:12px 15px 14px;border-top:3px solid var(--series)}
-.comparison-chart h4{margin:0 0 10px;font-size:15px;color:#3c3024}
-.comparison-chart ol{display:grid;gap:3px;margin:0;padding:0;list-style:none}
-.comparison-row{display:grid;grid-template-columns:4.6em minmax(0,1fr) 8.7em;align-items:center;gap:6px;padding:2px 4px;border-radius:5px;font-size:11px;color:#554633}
-.comparison-row.is-selected{background:#f2e8d6;font-weight:850}
-.comparison-row small{font-size:inherit;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.comparison-track{height:8px;overflow:hidden;border-radius:5px;background:#efe7db}
-.comparison-bar{display:block;height:100%;width:var(--bar);background:var(--series);border-radius:5px}
-@media(max-width:670px){.comparison-grid{grid-template-columns:minmax(0,1fr)}.market-comparison .section-head{flex-wrap:wrap}}
+#market-summary .market-comparison{margin-top:24px;padding:clamp(13px,2vw,24px);border:1px solid #e5d9c8;border-radius:20px;background:linear-gradient(150deg,#fdf9f3,#f4eee4)}
+.market-comparison .section-head{align-items:start;margin-bottom:14px}
+.market-comparison h3{margin:0;color:#2d543f;font-size:clamp(20px,2.4vw,29px);letter-spacing:-.04em}
+.comparison-order{display:block;margin-top:3px}
+#dong-comparison-period{flex-shrink:0;padding:4px 9px;border:1px solid #e5d9c8;border-radius:20px;background:#fffdf8;color:#665440}
+.comparison-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.comparison-chart{min-width:0;padding:14px 13px;border:1px solid var(--series-border);border-top:3px solid var(--series);border-radius:15px;background:#fffdfa;box-shadow:0 5px 15px #4938240b}
+.comparison-chart h4{display:flex;align-items:center;gap:7px;margin:0 0 12px;font-size:15px;color:#362a20;white-space:nowrap}
+.comparison-chart h4::before{content:"";width:8px;height:8px;flex:none;border-radius:50%;background:var(--series)}
+.comparison-axis{display:flex;justify-content:space-between;gap:3px;margin-bottom:3px;color:#695d51;font-size:10px;font-variant-numeric:tabular-nums}
+.comparison-chart ol{margin:0;padding:0;list-style:none}
+.comparison-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 7px;padding:6px 0;border-top:1px solid #eee7df;color:#3d3026;font-size:12px;font-weight:750}
+.comparison-row:first-child{border-top:0}
+.comparison-row.is-selected{margin-inline:-5px;padding-inline:5px;border-radius:5px;background:var(--series-tint)}
+.comparison-value{font-size:inherit;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.comparison-track{grid-column:1/-1;height:9px;overflow:hidden;border-radius:4px;background:linear-gradient(to right,transparent 49.7%,var(--series-border) 49.7% 50.3%,transparent 50.3%),var(--series-tint)}
+.comparison-bar{display:block;height:100%;width:var(--bar);background:linear-gradient(90deg,var(--series-light),var(--series));border-radius:4px}
+@media(max-width:1040px){.comparison-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:570px){.comparison-grid{grid-template-columns:minmax(0,1fr)}.market-comparison .section-head{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -292,7 +299,7 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
       </div>
       <div class="market-grid market-details" id="market-metrics"></div>
       <section id="dong-comparison" class="market-comparison" aria-labelledby="dong-comparison-title">
-        <div class="section-head"><h3 id="dong-comparison-title">법정동별 아파트 가격·거래량 비교</h3><span class="subtle" id="dong-comparison-period"></span></div>
+        <div class="section-head"><div><h3 id="dong-comparison-title">법정동별 아파트 가격·거래량 비교</h3><span class="subtle comparison-order">아파트 신고 거래 · 지표별 내림차순</span></div><span class="subtle" id="dong-comparison-period"></span></div>
         <div class="comparison-grid" id="dong-comparison-charts"></div>
         <p class="market-note">평당가는 전용 3.305785㎡ 기준입니다. 전세가율은 동별 전세 중위 보증금 ÷ 매매 중위가이며, 매매와 전세가 모두 집계된 동에 표시합니다. —는 산정할 거래가 없는 경우입니다.</p>
       </section>
@@ -4157,6 +4164,16 @@ function medianLeaseRate(sales, leases) {
   return sale > 0 && lease !== null ? lease/sale*100 : null;
 }
 
+
+function comparisonCeiling(value, count = false) {
+  const unit = 10 ** Math.floor(Math.log10(Math.max(1,value)));
+  const steps = count ? [1,2,4,6,8,10] : [1,2,2.5,4,5,6,8,10];
+  return steps.map(step => step*unit).find(limit => limit >= value) ?? unit*10;
+}
+function comparisonPriceTick(value) {
+  if (value >= 10000) return formatted(value/10000) + '억';
+  return formatted(value) + '만';
+}
 function renderDongComparison(allRows, start, end, selected) {
   const comparison = legalDongs.map(dong => {
     const sales = allRows.filter(row => row[1] === dong && row[2] === 'sale');
@@ -4164,22 +4181,29 @@ function renderDongComparison(allRows, start, end, selected) {
     return {dong,average:averageSalePrice(sales),unit:averageSalePrice(sales,true),leaseRate:medianLeaseRate(sales,leases),count:sales.length};
   });
   const metrics = [
-    ['평균 매매가','average','#8b5dae',marketPrice],
-    ['평균 평당가','unit','#3c79a5',marketPrice],
-    ['전세가율 참고','leaseRate','#33806e',value => value.toFixed(1)+'%'],
-    ['매매 건수','count','#b46c35',value => formatted(value)+'건']
+    {title:'평균 매매가',key:'average',palette:['#6f49a0','#bc9ce8','#e1d2ee','#f2eaf8'],format:marketPrice,tick:comparisonPriceTick},
+    {title:'평균 평당가',key:'unit',palette:['#3664a2','#8cc8f0','#c8dbee','#e9f2fa'],format:marketPrice,tick:comparisonPriceTick},
+    {title:'전세가율 참고',key:'leaseRate',palette:['#2e7663','#8ed5bd','#c1e1d6','#e5f3ed'],format:value => value.toFixed(1)+'%',tick:value => formatted(value)+'%'},
+    {title:'매매 건수',key:'count',palette:['#a25e28','#f3c676','#e9d4b7','#f8eedf'],format:value => formatted(value)+'건',tick:value => formatted(value)+'건'}
   ];
-  $('#dong-comparison-period').textContent = start + ' ~ ' + end + ' · 계약일 기준';
-  $('#dong-comparison-charts').innerHTML = metrics.map(([title,key,color,format]) => {
-    const max = Math.max(1,...comparison.map(item => item[key] ?? 0));
-    const bars = comparison.map(item => {
+  $('#dong-comparison-period').textContent = start + ' ~ ' + end;
+  $('#dong-comparison-charts').innerHTML = metrics.map(({title,key,palette,format,tick}) => {
+    const sorted = comparison.slice().sort((a,b) => (b[key] ?? -1) - (a[key] ?? -1));
+    const maximum = sorted[0][key] ?? 0;
+    const floor = key === 'leaseRate' ? 100 : key === 'count' ? 2 : 10000;
+    const limit = comparisonCeiling(Math.max(maximum,floor),key === 'count');
+    const axis = [0,limit/2,limit].map(value => '<span>' + tick(value) + '</span>').join('');
+    const rows = sorted.map(item => {
       const value = item[key];
       return '<li class="comparison-row' + (item.dong === selected ? ' is-selected' : '') + '"><span>' + item.dong +
-        '</span><span class="comparison-track" aria-hidden="true"><span class="comparison-bar" style="--bar:' +
-        ((value ?? 0)/max*100).toFixed(2) + '%"></span></span><small>' +
-        (value === null ? '—' : format(value)) + '</small></li>';
+        '</span><strong class="comparison-value">' + (value === null ? '—' : format(value)) +
+        '</strong><span class="comparison-track" aria-hidden="true"><span class="comparison-bar" style="--bar:' +
+        ((value ?? 0)/limit*100).toFixed(2) + '%"></span></span></li>';
     }).join('');
-    return '<article class="card comparison-chart" style="--series:' + color + '"><h4>' + title + '</h4><ol>' + bars + '</ol></article>';
+    const [series,light,border,tint] = palette;
+    return '<article class="card comparison-chart" style="--series:' + series + ';--series-light:' + light +
+      ';--series-border:' + border + ';--series-tint:' + tint + '"><h4>' + title +
+      '</h4><div class="comparison-axis" aria-hidden="true">' + axis + '</div><ol>' + rows + '</ol></article>';
   }).join('');
 }
 
