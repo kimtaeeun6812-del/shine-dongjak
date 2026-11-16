@@ -305,6 +305,42 @@ a.map-place:hover,a.map-place:focus-visible{background:#fff0a9;text-decoration:u
 :is(.location-card,.listing-card):nth-child(4n+3){--card-outline:#c39966}
 :is(.location-card,.listing-card):nth-child(4n+4){--card-outline:#85a1bf}
 @media(max-width:600px){#overview .skyline{width:100%}}
+
+/* Color accents across the dashboard */
+#overview.hero,.dong-preview,.dong-intro,.dong-selector,#ranking .filters,#ranking .rank-panel,#ranking .detail,
+.market-panel,#market-summary .market-comparison,#market-summary .chart,.index-market,.recent-market{border-width:3px}
+.market-stat,.comparison-chart,.index-card,.listing-card{border-width:3px}
+.topbar{border-bottom-width:4px}
+#location{padding:clamp(12px,2vw,23px);border:3px solid #648d79;border-radius:20px;background:linear-gradient(145deg,#fcf8ef,#fffdf8 60%)}
+#location .section-head{margin-bottom:15px;align-items:center}
+#location h2{color:#29533e;font-size:clamp(21px,2.8vw,34px)}
+#location-caption{color:#4b6255}
+#location .location-grid{gap:12px;align-items:stretch}
+#location .location-card{aspect-ratio:1;min-width:0;min-height:min-content;display:flex;flex-direction:column;padding:12px;border:3px solid var(--location-color);border-radius:16px;background:linear-gradient(155deg,var(--location-soft),#fffdf9 62%);box-shadow:0 4px 12px #43342511}
+#location .location-card[data-kind="train"]{--location-color:#a82d43;--location-soft:#fce8eb;--location-rule:#f2d5dc}
+#location .location-card[data-kind="school"]{--location-color:#245897;--location-soft:#e7f0ff;--location-rule:#d5e4fa}
+#location .location-card[data-kind="shop"]{--location-color:#a95018;--location-soft:#ffeddd;--location-rule:#f5dfca}
+#location .location-card[data-kind="plan"]{--location-color:#116f68;--location-soft:#dff5ef;--location-rule:#cceae4}
+#location .location-card header{gap:9px;margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--location-rule)}
+#location .location-card .location-icon{flex:none;width:36px;height:36px;border-radius:10px;color:#fff;background:var(--location-color)}
+#location .location-icon svg{width:20px;height:20px}
+#location .location-card h3{color:var(--location-color);font-size:clamp(15px,1.75vw,23px);line-height:1.18}
+#location .poi-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;padding:5px 0;border-color:var(--location-rule);align-items:start}
+#location .poi-line:first-of-type{border-top:0}
+#location .poi-line a{color:#322b25;font-weight:750;overflow-wrap:anywhere}
+#location .poi-line a::before{content:"";display:inline-block;width:5px;height:5px;margin:0 5px 2px 0;border-radius:50%;background:var(--location-color)}
+#location .poi-line span{padding:1px 4px;color:var(--location-color);background:var(--location-soft);border-radius:4px;font-size:9px;text-align:right}
+#location .location-card p{margin:auto 0 0;padding-top:6px;color:#625449;line-height:1.35}
+@media(max-width:1050px){#location .location-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px){
+ #location .location-grid{gap:7px}
+ #location .location-card{padding:8px;border-width:2px;border-radius:12px}
+ #location .location-card .location-icon{width:28px;height:28px;border-radius:7px}
+ #location .location-icon svg{width:16px;height:16px}
+ #location .poi-line{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px;padding:3px 0}
+ #location .location-card header{gap:5px}
+ #location .location-card h3{font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -4958,13 +4994,13 @@ function renderLocation() {
   const cards = [
     ['train','교통',transport],
     ['school','학군',facilities(['초등학교','중학교','고등학교','학교'])],
-    ['shop','생활·상권',shops],
-    ['plan','주변 개발계획',row ? (plans[row.dong] ?? ['동작구 도시정비 공고']).map(name => ({name,type:'공고 참고',href:name.includes('지구단위계획') ? districtPlan : planLink})) : []]
+    ['shop','상권·생활',shops],
+    ['plan','개발계획',row ? (plans[row.dong] ?? ['동작구 도시정비 공고']).map(name => ({name,type:'공고 참고',href:name.includes('지구단위계획') ? districtPlan : planLink})) : []]
   ];
   $('#location-grid').innerHTML = cards.map(([ico,title,items]) => {
     const note = !row ? '선택한 단지의 주변 정보를 표시합니다.' : ico === 'plan' ? '동·생활권 단위 참고 · 최신 단계는 공고 확인' :
       ico === 'school' && state.geo ? '서울시교육청 학교 위치 · 배정 학교 별도 확인' : state.geo ? '공개 좌표로 계산 · 거리 없는 항목은 생활권 참고' : '생활권 참고 · 단지별 거리 미확인';
-    return '<article class="card location-card"><header><span class="location-icon">' + icon(ico) + '</span><h3>' + title + '</h3></header>' + items.map(item => {
+    return '<article class="card location-card" data-kind="' + ico + '"><header><span class="location-icon">' + icon(ico) + '</span><h3>' + title + '</h3></header>' + items.map(item => {
       const href = item.href || (item.query ? 'https://map.kakao.com/?q=' + encodeURIComponent(item.query) : item.lat ? 'https://www.openstreetmap.org/?mlat=' + item.lat + '&mlon=' + item.lon + '#map=17/' + item.lat + '/' + item.lon : link(item.name));
       return '<div class="poi-line"><a href="' + href + '" target="_blank" rel="noopener">' + escape(item.name) + '</a><span>' + (item.distance == null ? escape(item.type) : escape(item.type) + ' · ' + formatted(item.distance) + 'm') + '</span></div>';
     }).join('') + '<p>' + note + '</p></article>';
